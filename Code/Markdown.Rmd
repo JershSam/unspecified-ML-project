@@ -1,0 +1,159 @@
+---
+title: "Markdown"
+author: "Josh Somoukian and Thomas Pepperz"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(lubridate)
+library(knitr)
+
+#Importing data
+assignments = read_csv("~/R/unspecified-ML-project/ML Project/assignments.csv", 
+                        col_types = cols(assignment_created_at = col_datetime(format = "%Y-%m-%d %H:%M:%S"), 
+                                         start_date = col_datetime(format = "%Y-%m-%d %H:%M:%S"), 
+                                         end_date = col_datetime(format = "%Y-%m-%d %H:%M:%S"), 
+                                         filled_date = col_datetime(format = "%Y-%m-%d %H:%M:%S"), 
+                                         hours_worked = col_double(),
+                                         bonus_percent = col_double(),
+                                         admin_bonus_percent = col_double(),
+                                         bonus_added_at = col_datetime(format = "%Y-%m-%d %H:%M:%S"),
+                                         professional_removed_at = col_datetime(format = "%Y-%m-%d %H:%M:%S")))
+
+contractor_availability_true = read_csv("~/R/unspecified-ML-project/ML Project/contractor-availability-true.csv", 
+                                        col_types = cols(date = col_date(format = "%Y-%m-%d")))
+
+contractor_geolocations_distance = read.csv('~/R/unspecified-ML-project/ML Project/contractor-geolocations-distance.csv')
+
+office_alternative_locations = read.csv('~/R/unspecified-ML-project/ML Project/office-alternative-locations.csv')
+
+office_geolocations = read.csv('~/R/unspecified-ML-project/ML Project/office-geolocations.csv')
+
+office_softwares = read.csv('~/R/unspecified-ML-project/ML Project/office-softwares.csv')
+
+#Categorizing assignments into Morning/Afternoon/Evening/Overnight. Also creating columns that return the difference between various date columns in hours
+assignments = assignments %>%
+  mutate(
+    time_of_day = case_when(
+      hour(start_date) >= 5 & hour(start_date) < 11 ~ 'Morning',
+      hour(start_date) >= 11 & hour(start_date) < 17 ~ 'Afternoon',
+      hour(start_date) >= 17 & hour(start_date) < 23 ~ 'Evening',
+      hour(start_date) >= 23 | hour(start_date) < 5 ~ 'Overnight'
+    ),
+    is_filled = case_when(
+      is.na(filled_date) ~ 0,
+      T ~ 1
+    ),
+    time_to_fill = difftime(filled_date, assignment_created_at, units = "hours"),
+    length_of_assignment = difftime(end_date, start_date, units = "hours"),
+    time_to_start = difftime(start_date, assignment_created_at, units = "hours")
+  )
+
+```
+
+## Summary Statistics
+
+```{r summary stats, echo=F, warning=F}
+assignments %>%
+  group_by(time_of_day) %>%
+  summarize(
+    "Fill Rate" = mean(is_filled,
+                       na.rm = T),
+    "Assignments Filled" = sum(is_filled),
+    "Assignments Unfilled" = sum(is_filled == 0),
+    "Average Post to Fill" = mean(time_to_fill,
+                                  na.rm = T),
+    "SD Post to Fill" = sd(time_to_fill,
+                           na.rm = T),
+    "Min Post to Fill" = min(time_to_fill,
+                             na.rm = T),
+    "Median Post to Fill" = median(time_to_fill,
+                                   na.rm = T),
+    "Max Post to Fill" = max(time_to_fill,
+                             na.rm = T),
+    "Average Post to Start" = mean(time_to_start,
+                                   na.rm = T),
+    "SD Post to Start" = sd(time_to_start,
+                            na.rm = T),
+    "Min Post to Start" = min(time_to_start,
+                              na.rm = T),
+    "Median Post to Start" = median(time_to_start,
+                                    na.rm = T),
+    "Max Post to Start" = max(time_to_start,
+                              na.rm = T)
+  ) %>%
+  rbind(
+    assignments %>%
+  group_by(is_filled) %>%
+  summarize(
+    "Fill Rate" = mean(is_filled,
+                       na.rm = T),
+    "Assignments Filled" = sum(is_filled),
+    "Assignments Unfilled" = sum(is_filled == 0),
+    "Average Post to Fill" = mean(time_to_fill,
+                                  na.rm = T),
+    "SD Post to Fill" = sd(time_to_fill,
+                           na.rm = T),
+    "Min Post to Fill" = min(time_to_fill,
+                             na.rm = T),
+    "Median Post to Fill" = median(time_to_fill,
+                                   na.rm = T),
+    "Max Post to Fill" = max(time_to_fill,
+                             na.rm = T),
+    "Average Post to Start" = mean(time_to_start,
+                                   na.rm = T),
+    "SD Post to Start" = sd(time_to_start,
+                            na.rm = T),
+    "Min Post to Start" = min(time_to_start,
+                              na.rm = T),
+    "Median Post to Start" = median(time_to_start,
+                                    na.rm = T),
+    "Max Post to Start" = max(time_to_start,
+                              na.rm = T)
+  ) %>%
+    rename(time_of_day = is_filled),
+    assignments %>%
+  summarize(
+    time_of_day = "ALL",
+    "Fill Rate" = mean(is_filled,
+                       na.rm = T),
+    "Assignments Filled" = sum(is_filled),
+    "Assignments Unfilled" = sum(is_filled == 0),
+    "Average Post to Fill" = mean(time_to_fill,
+                                  na.rm = T),
+    "SD Post to Fill" = sd(time_to_fill,
+                           na.rm = T),
+    "Min Post to Fill" = min(time_to_fill,
+                             na.rm = T),
+    "Median Post to Fill" = median(time_to_fill,
+                                   na.rm = T),
+    "Max Post to Fill" = max(time_to_fill,
+                             na.rm = T),
+    "Average Post to Start" = mean(time_to_start,
+                                   na.rm = T),
+    "SD Post to Start" = sd(time_to_start,
+                            na.rm = T),
+    "Min Post to Start" = min(time_to_start,
+                              na.rm = T),
+    "Median Post to Start" = median(time_to_start,
+                                    na.rm = T),
+    "Max Post to Start" = max(time_to_start,
+                              na.rm = T)
+    )
+  ) %>%
+  rename(Group = time_of_day) %>%
+  mutate(Group = replace(Group, 
+                         Group == 0, 
+                         "Not Filled"),
+         Group = replace(Group,
+                         Group == 1,
+                         "Filled")) %>%
+  kable()
+```
+
+```{r, echo=FALSE}
+```
