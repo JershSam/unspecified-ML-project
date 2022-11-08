@@ -2,7 +2,9 @@
 title: "Markdown"
 author: "Josh Somoukian and Thomas Pepperz"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -55,7 +57,9 @@ assignments = assignments %>%
 
 ```
 
-## Summary Statistics
+# Summary Statistics
+
+## Fill Rate
 
 ```{r summary stats, echo=F, warning=F}
 assignments %>%
@@ -64,7 +68,43 @@ assignments %>%
     "Fill Rate" = mean(is_filled,
                        na.rm = T),
     "Assignments Filled" = sum(is_filled),
-    "Assignments Unfilled" = sum(is_filled == 0),
+    "Assignments Unfilled" = sum(is_filled == 0)
+  ) %>%
+  rbind(
+    assignments %>%
+  group_by(is_filled) %>%
+  summarize(
+    "Fill Rate" = mean(is_filled,
+                       na.rm = T),
+    "Assignments Filled" = sum(is_filled),
+    "Assignments Unfilled" = sum(is_filled == 0)
+  ) %>%
+    rename(time_of_day = is_filled),
+    assignments %>%
+  summarize(
+    time_of_day = "ALL",
+    "Fill Rate" = mean(is_filled,
+                       na.rm = T),
+    "Assignments Filled" = sum(is_filled),
+    "Assignments Unfilled" = sum(is_filled == 0)
+    )
+  ) %>%
+  rename(Group = time_of_day) %>%
+  mutate(Group = replace(Group, 
+                         Group == 0, 
+                         "Not Filled"),
+         Group = replace(Group,
+                         Group == 1,
+                         "Filled")) %>%
+  kable()
+```
+
+## Post to Fill
+
+```{r, echo=F, warning=F}
+assignments %>%
+  group_by(time_of_day) %>%
+  summarize(
     "Average Post to Fill" = mean(time_to_fill,
                                   na.rm = T),
     "SD Post to Fill" = sd(time_to_fill,
@@ -74,7 +114,56 @@ assignments %>%
     "Median Post to Fill" = median(time_to_fill,
                                    na.rm = T),
     "Max Post to Fill" = max(time_to_fill,
+                             na.rm = T)
+  ) %>%
+  rbind(
+    assignments %>%
+  group_by(is_filled) %>%
+  summarize(
+    "Average Post to Fill" = mean(time_to_fill,
+                                  na.rm = T),
+    "SD Post to Fill" = sd(time_to_fill,
+                           na.rm = T),
+    "Min Post to Fill" = min(time_to_fill,
                              na.rm = T),
+    "Median Post to Fill" = median(time_to_fill,
+                                   na.rm = T),
+    "Max Post to Fill" = max(time_to_fill,
+                             na.rm = T)
+  ) %>%
+    rename(time_of_day = is_filled),
+    assignments %>%
+  summarize(
+    time_of_day = "ALL",
+    "Average Post to Fill" = mean(time_to_fill,
+                                  na.rm = T),
+    "SD Post to Fill" = sd(time_to_fill,
+                           na.rm = T),
+    "Min Post to Fill" = min(time_to_fill,
+                             na.rm = T),
+    "Median Post to Fill" = median(time_to_fill,
+                                   na.rm = T),
+    "Max Post to Fill" = max(time_to_fill,
+                             na.rm = T)
+    )
+  ) %>%
+  rename(Group = time_of_day) %>%
+  mutate(Group = replace(Group, 
+                         Group == 0, 
+                         "Not Filled"),
+         Group = replace(Group,
+                         Group == 1,
+                         "Filled")) %>%
+  kable()
+```
+
+\newpage
+## Post to Start
+
+```{r, echo=F, warning=F}
+assignments %>%
+  group_by(time_of_day) %>%
+  summarize(
     "Average Post to Start" = mean(time_to_start,
                                    na.rm = T),
     "SD Post to Start" = sd(time_to_start,
@@ -90,20 +179,6 @@ assignments %>%
     assignments %>%
   group_by(is_filled) %>%
   summarize(
-    "Fill Rate" = mean(is_filled,
-                       na.rm = T),
-    "Assignments Filled" = sum(is_filled),
-    "Assignments Unfilled" = sum(is_filled == 0),
-    "Average Post to Fill" = mean(time_to_fill,
-                                  na.rm = T),
-    "SD Post to Fill" = sd(time_to_fill,
-                           na.rm = T),
-    "Min Post to Fill" = min(time_to_fill,
-                             na.rm = T),
-    "Median Post to Fill" = median(time_to_fill,
-                                   na.rm = T),
-    "Max Post to Fill" = max(time_to_fill,
-                             na.rm = T),
     "Average Post to Start" = mean(time_to_start,
                                    na.rm = T),
     "SD Post to Start" = sd(time_to_start,
@@ -119,20 +194,6 @@ assignments %>%
     assignments %>%
   summarize(
     time_of_day = "ALL",
-    "Fill Rate" = mean(is_filled,
-                       na.rm = T),
-    "Assignments Filled" = sum(is_filled),
-    "Assignments Unfilled" = sum(is_filled == 0),
-    "Average Post to Fill" = mean(time_to_fill,
-                                  na.rm = T),
-    "SD Post to Fill" = sd(time_to_fill,
-                           na.rm = T),
-    "Min Post to Fill" = min(time_to_fill,
-                             na.rm = T),
-    "Median Post to Fill" = median(time_to_fill,
-                                   na.rm = T),
-    "Max Post to Fill" = max(time_to_fill,
-                             na.rm = T),
     "Average Post to Start" = mean(time_to_start,
                                    na.rm = T),
     "SD Post to Start" = sd(time_to_start,
@@ -153,7 +214,4 @@ assignments %>%
                          Group == 1,
                          "Filled")) %>%
   kable()
-```
-
-```{r, echo=FALSE}
 ```
