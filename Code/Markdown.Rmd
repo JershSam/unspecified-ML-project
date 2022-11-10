@@ -2,6 +2,7 @@
 title: "Markdown"
 author: "Josh Somoukian and Thomas Pepperz"
 date: "`r Sys.Date()`"
+classoption: landscape
 output:
   pdf_document: default
   html_document: default
@@ -13,6 +14,7 @@ library(tidyverse)
 library(readr)
 library(lubridate)
 library(knitr)
+library(data.table)
 
 #Importing data
 assignments = read_csv("~/R/unspecified-ML-project/ML Project/assignments.csv", 
@@ -33,9 +35,11 @@ contractor_geolocations_distance = read.csv('~/R/unspecified-ML-project/ML Proje
 
 office_alternative_locations = read.csv('~/R/unspecified-ML-project/ML Project/office-alternative-locations.csv')
 
-office_geolocations = read.csv('~/R/unspecified-ML-project/ML Project/office-geolocations.csv')
+office_geolocations = read.csv('~/R/unspecified-ML-project/ML Project/offices-geolocations-wcity.csv')
 
 office_softwares = read.csv('~/R/unspecified-ML-project/ML Project/office-softwares.csv')
+
+assignment_supply = fread("~/R/unspecified-ML-project/Output/assignment-supply.csv")
 
 #Categorizing assignments into Morning/Afternoon/Evening/Overnight. Also creating columns that return the difference between various date columns in hours
 assignments = assignments %>%
@@ -55,6 +59,16 @@ assignments = assignments %>%
     time_to_start = difftime(start_date, assignment_created_at, units = "hours")
   )
 
+#Replace NA values in the bonus percent column with 0's for grouping and calclulating purposes
+assignments$bonus_percent = replace_na(assignments$bonus_percent, 0)
+
+#For now, cutting off assignments that have a start date more than 3 months from today's date because many of those are unfilled
+assignments = assignments %>%
+  filter(start_date <= (Sys.Date() + 90))
+
+#Remove negative values for length of assignment
+assignments = assignments %>%
+  filter(length_of_assignment > 0)
 ```
 
 # Summary Statistics
@@ -213,5 +227,39 @@ assignments %>%
          Group = replace(Group,
                          Group == 1,
                          "Filled")) %>%
+  kable()
+```
+
+## Bonus Analysis
+``` {r bonus, echo=F, warning=F}
+assignments %>%
+  group_by(bonus_percent) %>%
+  summarise(
+    "Postings Filled" = sum(is_filled),
+    "Total Postings" = n(),
+    "Fill Rate" = round(sum(is_filled)/n(), digits = 3),
+    "Median Assignment Length" = median(length_of_assignment,
+                                   na.rm = T),
+    "Median Time to Fill" = median(time_to_fill,
+                                   na.rm = T),
+    "Median Time to Start" = median(time_to_start,
+                                    na.rm = T)
+      ) %>% 
+  rbind(
+    assignments %>%
+      filter(bonus_percent > 0) %>%
+      summarise(
+        bonus_percent = "Any Bonus",
+        "Postings Filled" = sum(is_filled),
+        "Total Postings" = n(),
+        "Fill Rate" = round(sum(is_filled)/n(), digits = 3),
+        "Median Assignment Length" = median(length_of_assignment,
+                                            na.rm = T),
+        "Median Time to Fill" = median(time_to_fill,
+                                       na.rm = T),
+        "Median Time to Start" = median(time_to_start,
+                                        na.rm = T)
+      )
+  ) %>%
   kable()
 ```
